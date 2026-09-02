@@ -1,0 +1,37 @@
+name: Build Danigram
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Buildozer and Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev aidl build-essential libstdc++6
+          pip install buildozer cython virtualenv
+
+      - name: Generate Buildozer Spec
+        run: |
+          buildozer init
+          sed -i 's/title = My Application/title = Danigram/' buildozer.spec
+          sed -i 's/package.name = myapp/package.name = danigram/' buildozer.spec
+          sed -i 's/requirements = python3,kivy/requirements = python3,pygame/' buildozer.spec
+
+      - name: Build Android App Bundle
+        run: |
+          echo "y" | python3 -m buildozer android release
+
+      - name: Upload Release Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: danigram-google-play-file
+          path: bin/*.aab
